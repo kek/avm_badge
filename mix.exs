@@ -21,10 +21,16 @@ defmodule Badge.MixProject do
       test_paths: test_paths(Mix.target()),
       deps: deps(),
       # ExAtomVM writes no application.bin, and NervesHub cannot identify
-      # firmware without one. The flash task bypasses the packbeam alias.
+      # firmware without one. The flash task packs again by itself, so the
+      # archive is packed and measured first: an oversized one never flashes.
       aliases: [
         "atomvm.packbeam": ["atomvm.application_bin", "atomvm.packbeam"],
-        "atomvm.esp32.flash": ["atomvm.application_bin", "atomvm.esp32.flash"]
+        "atomvm.esp32.flash": [
+          "atomvm.application_bin",
+          "atomvm.packbeam",
+          "badge.fit",
+          "atomvm.esp32.flash"
+        ]
       ],
       atomvm: [
         start: Badge,
@@ -44,8 +50,9 @@ defmodule Badge.MixProject do
   defp mod(:host, env) when env != :test, do: [mod: {Badge.Sim.Application, []}]
   defp mod(_target, _env), do: []
 
+  # `games` is packed into assets.avm by `mix badge.assets`, not into main.avm.
   defp elixirc_paths(:badge), do: ["lib"]
-  defp elixirc_paths(_target), do: ["lib", "sim/lib"]
+  defp elixirc_paths(_target), do: ["lib", "games", "sim/lib"]
 
   defp test_paths(:badge), do: ["test"]
   defp test_paths(_target), do: ["test", "sim/test"]
@@ -53,9 +60,7 @@ defmodule Badge.MixProject do
   defp deps do
     [
       {:exatomvm,
-       github: "atomvm/ExAtomVM",
-       ref: "ff7daf7e83a4e86fbf078730b6c49045a99de9f8",
-       runtime: false},
+       github: "atomvm/ExAtomVM", ref: "ff7daf7e83a4e86fbf078730b6c49045a99de9f8", runtime: false},
       # The Erlang side of the port driver built into the VM. A rebar3
       # project, so mix is told which manager to use.
       {:atomvm_websocket_client,

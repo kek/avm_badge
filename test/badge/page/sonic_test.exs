@@ -29,6 +29,15 @@ defmodule Badge.Page.SonicTest do
     assert Sonic.refresh(Sonic.init()) == 200
   end
 
+  test "without the assets partition the page explains itself and stays put" do
+    missing = %{phase: :missing}
+
+    assert [_ | _] = Sonic.render(missing)
+    assert Sonic.tick(missing) == missing
+    assert Sonic.handle_key({:edit, :newline}, missing) == :ignore
+    assert Sonic.handle_key({:nav, :home}, missing) == :ignore
+  end
+
   test "every rect stays on the panel below the title bar" do
     for s <- states(), {:rect, x, y, w, h, _c} <- Sonic.render(s) do
       assert x >= 0 and y >= 26 and w > 0 and h > 0

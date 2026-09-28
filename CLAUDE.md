@@ -45,6 +45,12 @@ Setup, flashing and the ESP-IDF workflow are in `README.md`.
   and writes it; it is **not** updated over the air
 - `python3 tools/check_partitions.py <partitions.csv> [label=path ...]` fails
   if an artifact outgrows its partition
+- **An oversized `main.avm` is flashed truncated** and the VM dies loading it
+  (`Cache error`, `MMU entry fault`, boot loop). `mix badge.fit` runs inside
+  the flash alias and stops it first; `main` has under 9K free
+- `games/` is compiled by `mix badge.assets` into `assets.avm`, not `main.avm`;
+  the VM finds modules in any mounted pack. Only the host build compiles it,
+  so a page calling it needs `no_warn_undefined` and a fallback for `:undef`
 - A missing assets partition is survivable: the badge boots, prints
   `Badge: no assets partition:` and skips the splash. `:atomvm.read_priv/2`
   answers `:undefined` rather than raising, so a guard that only catches will
@@ -78,7 +84,8 @@ Setup, flashing and the ESP-IDF workflow are in `README.md`.
   `erlang:binary_part/3`, `lists:keysort/2`, `lists:flatmap/2` all exist in
   the fork; `File`, `Mix`, `String`, `System` come from Mix tasks that are
   packed but never run; `GenServer`, `Supervisor`, `network`, `uart` are
-  flagged because the checker cannot see AtomVM's own libraries. Compare the
+  flagged because the checker cannot see AtomVM's own libraries, and
+  `Badge.Sonic` because it lives in the assets partition. Compare the
   count against `main` rather than reading the list
 
 ## Performance on the badge

@@ -1,8 +1,12 @@
 defmodule Mix.Tasks.Badge.Assets do
-  @shortdoc "Packs assets.avm from the frames, fonts and logo the device reads at runtime"
+  @shortdoc "Packs assets.avm from the frames, fonts, logo and games the device reads at runtime"
 
   @moduledoc """
   Writes `assets.avm` at the repo root, ready for `tools/flashassets.sh`.
+
+  Modules under `games/` are compiled and packed here rather than into
+  `main.avm`; the VM loads them from this partition once `Badge.start/0` has
+  mounted it.
 
       mix badge.assets
   """
@@ -17,6 +21,7 @@ defmodule Mix.Tasks.Badge.Assets do
     rickroll = Path.join(stage, "assets/priv/rickroll")
     fonts = Path.join(stage, "assets/priv/fonts")
     logo = Path.join(stage, "assets/priv/logo")
+    ebin = Path.join(stage, "ebin")
 
     try do
       File.mkdir_p!(rickroll)
@@ -31,6 +36,7 @@ defmodule Mix.Tasks.Badge.Assets do
       copy(frames, rickroll)
       copy(uf_fonts, fonts)
       copy(logos, logo)
+      beams = compile_games(ebin)
 
       out = Path.expand(@out)
       # Names inside the archive are relative to the staging directory.
@@ -38,7 +44,7 @@ defmodule Mix.Tasks.Badge.Assets do
         inputs =
           (Path.wildcard("assets/priv/rickroll/*.rgba") ++
              Path.wildcard("assets/priv/fonts/*.uf") ++
-             Path.wildcard("assets/priv/logo/*.rgba"))
+             Path.wildcard("assets/priv/logo/*.rgba") ++ beams)
           |> Enum.map(&to_charlist/1)
 
         :ok = :packbeam_api.create(to_charlist(out), inputs, %{lib: true})
@@ -47,6 +53,23 @@ defmodule Mix.Tasks.Badge.Assets do
       Mix.shell().info("#{@out}: #{File.stat!(out).size} bytes")
     after
       File.rm_rf!(stage)
+    end
+  end
+
+  # Compiled against the firmware in lib/, which has to be built first.
+  defp compile_games(ebin) do
+    Mix.Task.run("compile")
+    File.mkdir_p!(ebin)
+
+    case Path.wildcard("games/**/*.ex") do
+      [] ->
+        []
+
+      sources ->
+        {:ok, _modules, _diagnostics} =
+          Kernel.ParallelCompiler.compile_to_path(sources, ebin, return_diagnostics: true)
+
+        for beam <- File.ls!(ebin), do: Path.join("ebin", beam)
     end
   end
 
