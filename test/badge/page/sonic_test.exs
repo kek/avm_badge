@@ -2,21 +2,19 @@ defmodule Badge.Page.SonicTest do
   use ExUnit.Case, async: true
 
   alias Badge.Page.Sonic
-  alias Badge.Sonic.Game
-  alias Badge.Sonic.Level
 
   defp play_from(x) do
     {:ok, s} = Sonic.handle_key({:edit, :newline}, Sonic.init())
-    %{s | x: x, cam: Game.camera(x)}
+    %{s | x: x, cam: Badge.Sonic.camera(x)}
   end
 
   defp states do
     title = Sonic.init()
     over = %{play_from(40) | phase: :over}
-    clear = %{play_from(Level.goal()) | phase: :clear, bonus: 3000}
+    clear = %{play_from(Badge.Sonic.goal()) | phase: :clear, bonus: 3000}
 
     [title, over, clear] ++
-      for x <- 0..Level.width()//160, do: Sonic.tick(play_from(x))
+      for x <- 0..4040//160, do: Sonic.tick(play_from(x))
   end
 
   test "Esc and the shape keys are left to the router" do

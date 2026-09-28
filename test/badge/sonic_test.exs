@@ -1,41 +1,38 @@
-defmodule Badge.Sonic.GameTest do
+defmodule Badge.SonicTest do
   use ExUnit.Case, async: true
 
-  alias Badge.Sonic.Game
-  alias Badge.Sonic.Level
-
   defp playing do
-    {:ok, s} = Game.press(Game.new(), {:edit, :newline})
+    {:ok, s} = Badge.Sonic.press(Badge.Sonic.new(), {:edit, :newline})
     s
   end
 
   defp press(s, event) do
-    {:ok, s} = Game.press(s, event)
+    {:ok, s} = Badge.Sonic.press(s, event)
     s
   end
 
   defp steps(s, 0), do: s
-  defp steps(s, n), do: steps(Game.step(s), n - 1)
+  defp steps(s, n), do: steps(Badge.Sonic.step(s), n - 1)
 
   # Holds a key the way the keyboard does: a press, then a repeat every tick or so.
-  defp hold(s, event, 0), do: press(s, event) |> Game.step()
-  defp hold(s, event, n), do: hold(press(s, event) |> Game.step(), event, n - 1)
+  defp hold(s, event, 0), do: press(s, event) |> Badge.Sonic.step()
+  defp hold(s, event, n), do: hold(press(s, event) |> Badge.Sonic.step(), event, n - 1)
 
   describe "title" do
     test "starts on the title and Enter begins the act" do
-      assert Game.new().phase == :title
+      assert Badge.Sonic.new().phase == :title
       assert playing().phase == :play
     end
 
     test "a direction on the title does nothing" do
-      assert Game.press(Game.new(), {:move, :right}) == :ignore
+      assert Badge.Sonic.press(Badge.Sonic.new(), {:move, :right}) == :ignore
     end
 
     test "Sonic starts standing on the beach" do
       s = steps(playing(), 3)
 
       assert s.ground
-      assert s.y + elem(Game.size(), 1) == 200
+      assert s.y + elem(Badge.Sonic.size(), 1) == 200
     end
   end
 
@@ -69,14 +66,14 @@ defmodule Badge.Sonic.GameTest do
     test "the camera follows" do
       s = hold(playing(), {:move, :right}, 12)
 
-      assert s.cam == Game.camera(s.x)
+      assert s.cam == Badge.Sonic.camera(s.x)
       assert s.cam > 0
     end
   end
 
   describe "jumping" do
     test "Up leaves the ground as a ball and lands again" do
-      s = playing() |> Game.step() |> press({:move, :up}) |> Game.step()
+      s = playing() |> Badge.Sonic.step() |> press({:move, :up}) |> Badge.Sonic.step()
 
       assert s.vy < 0
       refute s.ground
@@ -89,13 +86,13 @@ defmodule Badge.Sonic.GameTest do
     end
 
     test "Space jumps too" do
-      s = playing() |> Game.step() |> press({:char, ?\s}) |> Game.step()
+      s = playing() |> Badge.Sonic.step() |> press({:char, ?\s}) |> Badge.Sonic.step()
 
       assert s.vy < 0
     end
 
     test "down rolls only at speed" do
-      assert playing() |> Game.step() |> press({:move, :down}) |> Map.get(:roll) == :none
+      assert playing() |> Badge.Sonic.step() |> press({:move, :down}) |> Map.get(:roll) == :none
 
       fast = hold(playing(), {:move, :right}, 5)
 
@@ -124,7 +121,7 @@ defmodule Badge.Sonic.GameTest do
     end
 
     test "a checkpoint that has been passed is where Sonic comes back" do
-      [post | _] = Level.checkpoints()
+      [post | _] = Badge.Sonic.checkpoints()
       s = %{playing() | check: post, x: 660, y: 100, ground: false} |> steps(40)
 
       assert s.x == post
@@ -142,11 +139,11 @@ defmodule Badge.Sonic.GameTest do
 
   describe "enemies" do
     test "a ball smashes an enemy and scores" do
-      [crab | _] = Level.window(0).enemies
-      {ex, ey, _w, _h, _f} = Level.enemy_at(crab, 1)
+      [crab | _] = Badge.Sonic.window(0).enemies
+      {ex, ey, _w, _h, _f} = Badge.Sonic.enemy_at(crab, 1)
 
       s = %{playing() | x: ex, y: ey - 10, vy: 5, ground: false, roll: :air}
-      s = Game.step(s)
+      s = Badge.Sonic.step(s)
 
       assert :lists.member(0, s.killed)
       assert s.score == 100
@@ -154,11 +151,11 @@ defmodule Badge.Sonic.GameTest do
     end
 
     test "walking into one with rings drops the rings" do
-      [crab | _] = Level.window(0).enemies
-      {ex, _ey, _w, _h, _f} = Level.enemy_at(crab, 1)
+      [crab | _] = Badge.Sonic.window(0).enemies
+      {ex, _ey, _w, _h, _f} = Badge.Sonic.enemy_at(crab, 1)
 
       s = %{playing() | x: ex, rings: 5}
-      s = Game.step(s)
+      s = Badge.Sonic.step(s)
 
       assert s.rings == 0
       assert s.hurt > 0
@@ -166,17 +163,17 @@ defmodule Badge.Sonic.GameTest do
     end
 
     test "walking into one without rings is fatal" do
-      [crab | _] = Level.window(0).enemies
-      {ex, _ey, _w, _h, _f} = Level.enemy_at(crab, 1)
+      [crab | _] = Badge.Sonic.window(0).enemies
+      {ex, _ey, _w, _h, _f} = Badge.Sonic.enemy_at(crab, 1)
 
-      assert Game.step(%{playing() | x: ex}).phase == :dead
+      assert Badge.Sonic.step(%{playing() | x: ex}).phase == :dead
     end
   end
 
   describe "the goal" do
     test "reaching the fortress clears the act with a bonus" do
-      s = %{playing() | x: Level.goal() - 4, rings: 10, vx: 10}
-      s = Game.step(s)
+      s = %{playing() | x: Badge.Sonic.goal() - 4, rings: 10, vx: 10}
+      s = Badge.Sonic.step(s)
 
       assert s.phase == :clear
       assert s.bonus >= 1000
@@ -184,19 +181,19 @@ defmodule Badge.Sonic.GameTest do
     end
 
     test "the replay prompt waits a moment" do
-      s = Game.step(%{playing() | x: Level.goal() - 4, vx: 10})
+      s = Badge.Sonic.step(%{playing() | x: Badge.Sonic.goal() - 4, vx: 10})
 
-      assert Game.press(s, {:edit, :newline}) == :ignore
+      assert Badge.Sonic.press(s, {:edit, :newline}) == :ignore
       assert press(steps(s, 10), {:edit, :newline}).phase == :title
     end
   end
 
   describe "springs" do
     test "landing on one launches Sonic high" do
-      {x, top} = hd(Level.window(3380).springs)
+      {x, top} = hd(Badge.Sonic.window(3380).springs)
 
-      s = %{playing() | x: x, y: top - 40, vy: 4, ground: false, cam: Game.camera(x)}
-      s = Game.step(s)
+      s = %{playing() | x: x, y: top - 40, vy: 4, ground: false, cam: Badge.Sonic.camera(x)}
+      s = Badge.Sonic.step(s)
 
       assert s.vy < -30
     end
@@ -204,7 +201,7 @@ defmodule Badge.Sonic.GameTest do
 
   describe "keys" do
     test "unused keys are ignored in play" do
-      assert Game.press(playing(), {:char, ?q}) == :ignore
+      assert Badge.Sonic.press(playing(), {:char, ?q}) == :ignore
     end
   end
 end
