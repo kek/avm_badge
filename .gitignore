@@ -1,5 +1,6 @@
 /_build/
 /deps/
+/tasks/_build/
 /.elixir_ls/
 *.avm
 erl_crash.dump

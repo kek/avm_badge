@@ -67,8 +67,12 @@ defmodule Badge.PagesTest do
     end
 
     test "an empty slot is nil, not a crash" do
-      assert Pages.for_key(:diamond, 1) == nil
+      assert Pages.for_key(:diamond, 2) == nil
       assert Pages.for_key(:square, 99) == nil
+    end
+
+    test "sonic ends the second screen" do
+      assert Pages.for_key(:diamond, 1) == Badge.Page.Sonic
     end
   end
 

@@ -45,6 +45,14 @@ Setup, flashing and the ESP-IDF workflow are in `README.md`.
   and writes it; it is **not** updated over the air
 - `python3 tools/check_partitions.py <partitions.csv> [label=path ...]` fails
   if an artifact outgrows its partition
+- **An oversized `main.avm` is flashed truncated** and the VM dies loading it
+  (`Cache error`, `MMU entry fault`, boot loop). `mix badge.fit` runs inside
+  the flash alias and stops it first
+- **`map.field` is large**: every use compiles to its own fallback branch.
+  In a big module, match the fields in the function head instead; it halved
+  `Badge.Sonic`
+- The firmware's Mix tasks live in `tasks/`, a `runtime: false` path dep, so
+  they stay out of `main.avm`. A new task goes there, not in `lib/`
 - A missing assets partition is survivable: the badge boots, prints
   `Badge: no assets partition:` and skips the splash. `:atomvm.read_priv/2`
   answers `:undefined` rather than raising, so a guard that only catches will
@@ -76,8 +84,7 @@ Setup, flashing and the ESP-IDF workflow are in `README.md`.
 - Use plain maps, not structs
 - `atomvm.check` has known false positives: `json:encode/1`, `json:decode/1`,
   `erlang:binary_part/3`, `lists:keysort/2`, `lists:flatmap/2` all exist in
-  the fork; `File`, `Mix`, `String`, `System` come from Mix tasks that are
-  packed but never run; `GenServer`, `Supervisor`, `network`, `uart` are
+  the fork; `GenServer`, `Supervisor`, `network`, `uart` are
   flagged because the checker cannot see AtomVM's own libraries. Compare the
   count against `main` rather than reading the list
 
