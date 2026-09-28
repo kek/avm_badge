@@ -53,9 +53,7 @@ defmodule Badge.MixProject do
   defp deps do
     [
       {:exatomvm,
-       github: "atomvm/ExAtomVM",
-       ref: "ff7daf7e83a4e86fbf078730b6c49045a99de9f8",
-       runtime: false},
+       github: "atomvm/ExAtomVM", ref: "ff7daf7e83a4e86fbf078730b6c49045a99de9f8", runtime: false},
       # The Erlang side of the port driver built into the VM. A rebar3
       # project, so mix is told which manager to use.
       {:atomvm_websocket_client,
@@ -72,6 +70,8 @@ defmodule Badge.MixProject do
        ref: "b5d57f945114c0687d519cbd23a7b210d48c5fdc",
        manager: :rebar3,
        override: true},
+      # This firmware's Mix tasks, kept out of main.avm.
+      {:badge_tasks, path: "tasks", runtime: false},
       # The packbeam escript, from Hex rather than an AtomVM checkout.
       {:atomvm_packbeam, "~> 0.8.2", runtime: false},
       # The browser side of the simulator, absent from the badge build.

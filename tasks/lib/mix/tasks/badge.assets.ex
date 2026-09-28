@@ -9,6 +9,8 @@ defmodule Mix.Tasks.Badge.Assets do
 
   use Mix.Task
 
+  @compile {:no_warn_undefined, :packbeam_api}
+
   @out "assets.avm"
 
   @impl Mix.Task
